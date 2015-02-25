@@ -27,13 +27,13 @@ static const char* kLegalXmlns[] = {
   "http://www.w3.org/1998/Math/MathML"
 };
 
-xmlNodePtr gumbo_libxml_convert_node(
+static xmlNodePtr convert_node(
     xmlDocPtr doc, GumboNode* node, bool attach_original) {
   xmlNodePtr result;
   switch (node->type) {
     case GUMBO_NODE_DOCUMENT:
       assert(false &&
-        "gumbo_libxml_convert_node cannot be used on the document node.  "
+        "convert_node cannot be used on the document node.  "
         "Doctype information is automatically added to the xmlDocPtr.");
       break;
     case GUMBO_NODE_ELEMENT:
@@ -58,7 +58,7 @@ xmlNodePtr gumbo_libxml_convert_node(
 
         // Children.
         for (int i = 0; i < elem->children.length; ++i) {
-          xmlAddChild(result, gumbo_libxml_convert_node(
+          xmlAddChild(result, convert_node(
               doc, elem->children.data[i], attach_original));
         }
       }
@@ -88,10 +88,10 @@ xmlNodePtr gumbo_libxml_convert_node(
   return result;
 }
 
-xmlDocPtr gumbo_libxml_parse(const char* buffer) {
+xmlDocPtr gumbo_libxml_parse_with_options(
+    GumboOptions* options, const char* buffer, size_t buffer_length) {
   xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
-  GumboOptions options = kGumboDefaultOptions;
-  GumboOutput* output = gumbo_parse_with_options(&options, buffer, strlen(buffer));
+  GumboOutput* output = gumbo_parse_with_options(options, buffer, buffer_length);
   GumboDocument* doctype = & output->document->v.document;
   xmlCreateIntSubset(
       doc,
@@ -99,7 +99,13 @@ xmlDocPtr gumbo_libxml_parse(const char* buffer) {
       BAD_CAST doctype->public_identifier,
       BAD_CAST doctype->system_identifier);
       
-  xmlDocSetRootElement(doc, gumbo_libxml_convert_node(doc, output->root, false));
-  gumbo_destroy_output(&options, output);
+  xmlDocSetRootElement(doc, convert_node(doc, output->root, false));
+  gumbo_destroy_output(options, output);
   return doc;
+
+}
+
+xmlDocPtr gumbo_libxml_parse(const char* buffer) {
+  GumboOptions options = kGumboDefaultOptions;
+  return gumbo_libxml_parse_with_options(&options, buffer, strlen(buffer));
 }

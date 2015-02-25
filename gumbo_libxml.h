@@ -29,8 +29,8 @@ typedef struct GumboInternalNode GumboNode;
 
 xmlDocPtr gumbo_libxml_parse(const char* buffer);
 
-xmlNodePtr gumbo_libxml_convert_node(
-    xmlDocPtr doc, GumboNode* node, bool attach_original);
+xmlDocPtr gumbo_libxml_parse_with_options(
+    GumboOptions*, const char* buffer, size_t buffer_length);
 
 #ifdef __cplusplus
 }
