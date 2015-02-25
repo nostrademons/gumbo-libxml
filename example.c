@@ -20,6 +20,7 @@
 
 #include "gumbo_libxml.h"
 #include "libxml/tree.h"
+#include "libxml/xpath.h"
 
 static void read_file(FILE* fp, char** output, int* length) {
   struct stat filestats;
@@ -32,6 +33,36 @@ static void read_file(FILE* fp, char** output, int* length) {
   while ((bytes_read = fread(*output + start, 1, *length - start, fp))) {
     start += bytes_read;
   }
+}
+
+static void delete_nodes(xmlDocPtr doc, const char* xpath_expr) {
+  xmlXPathContextPtr xpath_ctx = xmlXPathNewContext(doc);
+  if (xpath_ctx == NULL) {
+    fprintf(stderr, "Error: unable to create new XPath context.\n");
+    return;
+  }
+  xmlXPathObjectPtr xpath_obj = xmlXPathEvalExpression(xpath_expr, xpath_ctx);
+  if (xpath_obj == NULL) {
+    fprintf(stderr, "Error: unable to create new XPath context.\n");
+    xmlXPathFreeContext(xpath_ctx);
+    return;
+  }
+
+  // It's often tricky to combine mutations and XPath in the same pass, because
+  // XPath may select descendant nodes that are eliminated by the mutation.  For
+  // this reason, you may want to iterate in reverse document order so that
+  // children are mutated before they're thrown away.  In this particular
+  // example, it doesn't matter since all the tags we scrub don't have children,
+  // but see the note in:
+  // http://www.xmlsoft.org/examples/xpath2.c
+  for (int i = xpath_obj->nodesetval->nodeNr - 1; i >= 0; i--) {
+    xmlNodePtr node = xpath_obj->nodesetval->nodeTab[i];
+    xmlUnlinkNode(node);
+    xmlFreeNode(node);
+  }
+
+  xmlXPathFreeObject(xpath_obj);
+  xmlXPathFreeContext(xpath_ctx);
 }
 
 int main(int argc, const char** argv) {
@@ -51,6 +82,15 @@ int main(int argc, const char** argv) {
   int input_length;
   read_file(fp, &input, &input_length);
   xmlDocPtr doc = gumbo_libxml_parse(input);
+  delete_nodes(doc, "//script");
+  delete_nodes(doc, "//style");
+  delete_nodes(doc, "//link[@rel='stylesheet']");
+  delete_nodes(doc, "//@style");
+  delete_nodes(doc, "//@onload");
+  delete_nodes(doc, "//@onclick");
+  delete_nodes(doc, "//@onmousedown");
+  delete_nodes(doc, "//@onmouseover");
+  // Etc, this is not an exhaustive HTML scrubber.
   xmlSaveFormatFile("-", doc, 1);
   xmlFreeDoc(doc);
 }
