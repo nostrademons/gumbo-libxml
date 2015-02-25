@@ -51,5 +51,6 @@ int main(int argc, const char** argv) {
   int input_length;
   read_file(fp, &input, &input_length);
   xmlDocPtr doc = gumbo_libxml_parse(input);
+  xmlSaveFormatFile("-", doc, 1);
   xmlFreeDoc(doc);
 }
