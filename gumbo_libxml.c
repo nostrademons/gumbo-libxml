@@ -88,10 +88,10 @@ xmlNodePtr gumbo_libxml_convert_node(
   return result;
 }
 
-xmlDocPtr gumbo_libxml_parse(
-    const GumboOptions* options, const char* buffer, size_t buffer_length) {
+xmlDocPtr gumbo_libxml_parse(const char* buffer) {
   xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
-  GumboOutput* output = gumbo_parse_with_options(options, buffer, buffer_length);
+  GumboOptions options = kGumboDefaultOptions;
+  GumboOutput* output = gumbo_parse_with_options(&options, buffer, strlen(buffer));
   GumboDocument* doctype = & output->document->v.document;
   xmlCreateIntSubset(
       doc,
@@ -100,6 +100,6 @@ xmlDocPtr gumbo_libxml_parse(
       BAD_CAST doctype->system_identifier);
       
   xmlDocSetRootElement(doc, gumbo_libxml_convert_node(doc, output->root, false));
-  gumbo_destroy_output(options, output);
+  gumbo_destroy_output(&options, output);
   return doc;
 }
