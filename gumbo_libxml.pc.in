@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: Gumbo libxml bindings
 Description: A libxml2-compatible API for the Gumbo HTML parser.
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lgumbo_libxml
+Libs: -L${libdir} -lgumbo_xml
 Libs.private: @LIBS@
 Cflags: -I${includedir}
