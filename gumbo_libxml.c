@@ -42,7 +42,18 @@ static xmlNodePtr convert_node(
         GumboElement* elem = &node->v.element;
         // Tag name & namespace.
         xmlNsPtr namespace = NULL;
-        result = xmlNewNode(NULL, BAD_CAST gumbo_normalized_tagname(elem->tag));
+
+        char *elementName = gumbo_normalized_tagname(elem->tag);
+        if (strlen(elementName) > 0) {
+            result = xmlNewNode(NULL, BAD_CAST elementName);
+        } else {
+            GumboStringPiece gsp = elem->original_tag;
+            gumbo_tag_from_original_text(&gsp);
+            xmlChar *unknownTagName = xmlCharStrndup(gsp.data, gsp.length);
+            result = xmlNewNode(NULL, unknownTagName);
+            xmlFree(unknownTagName);
+        }
+
         if (node->parent->type != GUMBO_NODE_DOCUMENT &&
             elem->tag_namespace != node->parent->v.element.tag_namespace) {
           namespace = xmlNewNs(
