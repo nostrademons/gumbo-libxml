@@ -98,8 +98,23 @@ xmlDocPtr gumbo_libxml_parse_with_options(
       BAD_CAST doctype->name,
       BAD_CAST doctype->public_identifier,
       BAD_CAST doctype->system_identifier);
-      
-  xmlDocSetRootElement(doc, convert_node(doc, output->root, false));
+
+  GumboVector* children = &output->document->v.element.children;
+  for (unsigned int i = 0; i < children->length; i++) {
+    GumboNode* child = (GumboNode*) children->data[i];
+
+    switch (child->type) {
+      case GUMBO_NODE_COMMENT:
+        xmlAddChild((xmlNodePtr) doc, xmlNewDocComment(doc, BAD_CAST child->v.text.text));
+        break;
+      case GUMBO_NODE_ELEMENT:
+        xmlDocSetRootElement(doc, convert_node(doc, output->root, false));
+        break;
+      default:
+        break;
+    }
+  }
+
   gumbo_destroy_output(options, output);
   return doc;
 
